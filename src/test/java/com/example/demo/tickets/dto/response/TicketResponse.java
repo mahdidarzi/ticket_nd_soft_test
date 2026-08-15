@@ -1,6 +1,6 @@
-package com.example.demo.tickets.api.dto.response;
+package com.example.demo.tickets.dto.response;
 
-import com.example.demo.tickets.domain.TicketStatus;
+import com.example.demo.tickets.entity.enums.TicketStatus;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
