@@ -79,8 +79,6 @@ json
   "description": "User receives a 500 error when attempting to login via OAuth2",
   "priority": "HIGH"
 }
-🧪 Testing (Planned)
-[ ] Unit Tests for Service Layer (JUnit 5, Mockito)
-[ ] Integration Tests for Controller Layer (MockMvc)
+
 👤 Author
 Mehdi Darzi
