@@ -1,6 +1,7 @@
 package com.example.demo.tickets.controller;
 
 import com.example.demo.tickets.dto.request.CreateTicketRequest;
+import com.example.demo.tickets.dto.request.UpdateTicketStatusRequest;
 import com.example.demo.tickets.dto.response.TicketResponse;
 import com.example.demo.tickets.service.TicketService;
 import jakarta.validation.Valid;
@@ -21,8 +22,7 @@ public class TicketController {
 
     @PostMapping
     public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody CreateTicketRequest request) {
-        TicketResponse response = ticketService.createTicket(request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return new ResponseEntity<>(ticketService.createTicket(request), HttpStatus.CREATED);
     }
 
     @GetMapping
@@ -33,5 +33,12 @@ public class TicketController {
     @GetMapping("/{id}")
     public ResponseEntity<TicketResponse> getTicketById(@PathVariable UUID id) {
         return ResponseEntity.ok(ticketService.getTicketById(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<TicketResponse> updateTicketStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateTicketStatusRequest request) {
+        return ResponseEntity.ok(ticketService.updateTicketStatus(id, request.status()));
     }
 }
