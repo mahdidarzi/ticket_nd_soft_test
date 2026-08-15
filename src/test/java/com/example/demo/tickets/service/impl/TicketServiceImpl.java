@@ -1,9 +1,11 @@
 package com.example.demo.tickets.service.impl;
 
+import com.example.demo.tickets.aspect.LogExecutionTime;
 import com.example.demo.tickets.dto.request.CreateTicketRequest;
 import com.example.demo.tickets.dto.response.TicketResponse;
 import com.example.demo.tickets.entity.Ticket;
 import com.example.demo.tickets.exception.TicketNotFoundException;
+import com.example.demo.tickets.mapper.TicketMapper;
 import com.example.demo.tickets.repository.TicketRepository;
 import com.example.demo.tickets.service.TicketService;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +21,10 @@ import java.util.stream.Collectors;
 public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
+    private final TicketMapper ticketMapper;
 
     @Override
+    @LogExecutionTime
     @Transactional
     public TicketResponse createTicket(CreateTicketRequest request) {
         Ticket ticket = Ticket.builder()
@@ -29,33 +33,24 @@ public class TicketServiceImpl implements TicketService {
                 .build();
 
         Ticket savedTicket = ticketRepository.save(ticket);
-        return mapToResponse(savedTicket);
+        return ticketMapper.toResponse(savedTicket);
     }
 
     @Override
+    @LogExecutionTime
     @Transactional(readOnly = true)
     public List<TicketResponse> getAllTickets() {
         return ticketRepository.findAll().stream()
-                .map(this::mapToResponse)
+                .map(ticketMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
+    @LogExecutionTime
     @Transactional(readOnly = true)
     public TicketResponse getTicketById(UUID id) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new TicketNotFoundException(id));
-        return mapToResponse(ticket);
-    }
-
-    private TicketResponse mapToResponse(Ticket ticket) {
-        return new TicketResponse(
-                ticket.getId(),
-                ticket.getTitle(),
-                ticket.getDescription(),
-                ticket.getStatus(),
-                ticket.getCreatedAt(),
-                ticket.getUpdatedAt()
-        );
+        return ticketMapper.toResponse(ticket);
     }
 }
