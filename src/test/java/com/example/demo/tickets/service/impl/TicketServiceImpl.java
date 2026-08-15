@@ -1,0 +1,60 @@
+package com.example.demo.tickets.service.impl;
+
+import com.example.demo.tickets.dto.request.CreateTicketRequest;
+import com.example.demo.tickets.dto.response.TicketResponse;
+import com.example.demo.tickets.entity.Ticket;
+import com.example.demo.tickets.repository.TicketRepository;
+import com.example.demo.tickets.service.TicketService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class TicketServiceImpl implements TicketService {
+
+    private final TicketRepository ticketRepository;
+
+    @Override
+    @Transactional
+    public TicketResponse createTicket(CreateTicketRequest request) {
+        Ticket ticket = Ticket.builder()
+                .title(request.title())
+                .description(request.description())
+                .build();
+
+        Ticket savedTicket = ticketRepository.save(ticket);
+        return mapToResponse(savedTicket);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TicketResponse> getAllTickets() {
+        return ticketRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TicketResponse getTicketById(UUID id) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));
+        return mapToResponse(ticket);
+    }
+
+    private TicketResponse mapToResponse(Ticket ticket) {
+        return new TicketResponse(
+                ticket.getId(),
+                ticket.getTitle(),
+                ticket.getDescription(),
+                ticket.getStatus(),
+                ticket.getCreatedAt(),
+                ticket.getUpdatedAt()
+        );
+    }
+}
