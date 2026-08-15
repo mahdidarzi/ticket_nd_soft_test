@@ -3,6 +3,7 @@ package com.example.demo.tickets.service.impl;
 import com.example.demo.tickets.dto.request.CreateTicketRequest;
 import com.example.demo.tickets.dto.response.TicketResponse;
 import com.example.demo.tickets.entity.Ticket;
+import com.example.demo.tickets.exception.TicketNotFoundException;
 import com.example.demo.tickets.repository.TicketRepository;
 import com.example.demo.tickets.service.TicketService;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class TicketServiceImpl implements TicketService {
     @Transactional(readOnly = true)
     public TicketResponse getTicketById(UUID id) {
         Ticket ticket = ticketRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));
+                .orElseThrow(() -> new TicketNotFoundException(id));
         return mapToResponse(ticket);
     }
 
