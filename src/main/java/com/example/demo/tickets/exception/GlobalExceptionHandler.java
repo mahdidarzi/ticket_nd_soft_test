@@ -23,14 +23,7 @@ public class GlobalExceptionHandler {
             TicketNotFoundException ex,
             HttpServletRequest request
     ) {
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -44,14 +37,7 @@ public class GlobalExceptionHandler {
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                message,
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -59,14 +45,11 @@ public class GlobalExceptionHandler {
             MethodArgumentTypeMismatchException ex,
             HttpServletRequest request
     ) {
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
                 "Invalid parameter type: " + ex.getName(),
-                request.getRequestURI()
+                request
         );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -74,17 +57,9 @@ public class GlobalExceptionHandler {
             ConstraintViolationException ex,
             HttpServletRequest request
     ) {
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
-    // ⬇️ این متد جدید رو اضافه کن
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleHttpMessageNotReadable(
             HttpMessageNotReadableException ex,
@@ -92,32 +67,23 @@ public class GlobalExceptionHandler {
     ) {
         String message = "بدنه درخواست نامعتبر است";
 
-        if (ex.getCause() instanceof InvalidFormatException invalidFormatException) {
-            if (invalidFormatException.getTargetType() != null
-                    && invalidFormatException.getTargetType().isEnum()) {
+        InvalidFormatException invalidFormatException = findInvalidFormatException(ex);
+        if (invalidFormatException != null
+                && invalidFormatException.getTargetType() != null
+                && invalidFormatException.getTargetType().isEnum()) {
 
-                String fieldName = invalidFormatException.getPath().isEmpty()
-                        ? "field"
-                        : invalidFormatException.getPath().get(0).getFieldName();
+            String fieldName = invalidFormatException.getPath().isEmpty()
+                    ? "field"
+                    : invalidFormatException.getPath().get(0).getFieldName();
 
-                String allowedValues = Arrays
-                        .stream(invalidFormatException.getTargetType().getEnumConstants())
-                        .map(Object::toString)
-                        .collect(Collectors.joining(", "));
+            String allowedValues = Arrays.stream(invalidFormatException.getTargetType().getEnumConstants())
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
 
-                message = fieldName + ": مقدار وارد شده معتبر نیست. مقادیر مجاز: " + allowedValues;
-            }
+            message = fieldName + ": مقدار وارد شده معتبر نیست. مقادیر مجاز: " + allowedValues;
         }
 
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                message,
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
     @ExceptionHandler(Exception.class)
@@ -125,13 +91,36 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
+        return buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred",
+                request
+        );
+    }
+
+    private ResponseEntity<ApiError> buildErrorResponse(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request
+    ) {
         ApiError error = new ApiError(
                 LocalDateTime.now(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                "An unexpected error occurred",
+                status.value(),
+                status.getReasonPhrase(),
+                message,
                 request.getRequestURI()
         );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        return ResponseEntity.status(status).body(error);
+    }
+
+    private InvalidFormatException findInvalidFormatException(Throwable ex) {
+        Throwable cause = ex;
+        while (cause != null) {
+            if (cause instanceof InvalidFormatException invalidFormatException) {
+                return invalidFormatException;
+            }
+            cause = cause.getCause();
+        }
+        return null;
     }
 }
